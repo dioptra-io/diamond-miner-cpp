@@ -72,7 +72,7 @@ bool heartbeat_t::check_destination_ttl(uint32_t little_endian_addr, uint8_t ttl
         return false;
     }
 
-    if (m_options.is_from_bgp){
+    if (m_options.is_from_bgp || m_options.is_from_prefix_file){
         auto asn = m_patricia_trie.get(htonl(little_endian_addr));
         if (asn == nullptr){
             // Destination not in routable space.
