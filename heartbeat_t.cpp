@@ -374,9 +374,13 @@ void heartbeat_t::send_from_targets_file(uint8_t max_ttl) {
     if (a + 5 == 32){
         permutation_size = static_cast<uint32_t >(std::pow(2, a + 5) - 1);
     }
-    cperm_t* perm = cperm_create(permutation_size, PERM_MODE_CYCLE,
-                                        PERM_CIPHER_RC5, key, KEYLEN);
 
+    // From yarrp code, to avoid slow permutation generation when range is small.
+    PermMode mode = PERM_MODE_CYCLE;
+    if (permutation_size < 500000) {
+      mode = PERM_MODE_PREFIX;
+    }
+    cperm_t* perm = cperm_create(permutation_size, mode, PERM_CIPHER_RC5, key, KEYLEN);
 
     char * p = nullptr;
     p = (char *) &val;
