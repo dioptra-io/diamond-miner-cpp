@@ -135,6 +135,28 @@ namespace utils {
         };
     };
 
+
+    struct icmphdr
+    {
+        u_int8_t type;                /* message type */
+        u_int8_t code;                /* type sub-code */
+        u_int16_t checksum;
+        union
+        {
+            struct
+            {
+                u_int16_t        id;
+                u_int16_t        sequence;
+            } echo;                        /* echo datagram */
+            u_int32_t        gateway;        /* gateway address */
+            struct
+            {
+                u_int16_t        __unused;
+                u_int16_t        mtu;
+            } frag;                        /* path mtu discovery */
+        } un;
+    };
+
     /*
 	96 bit (12 bytes) pseudo header needed for udp header checksum calculation
 */

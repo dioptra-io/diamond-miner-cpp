@@ -46,6 +46,12 @@ public:
     static void init_tcp_header(uint8_t *transport_buffer);
     static void add_tcp_ports(uint8_t *transport_buffer, uint16_t sport, uint16_t dport);
     static void add_tcp_timestamp(uint8_t * transport_buffer, timeval & start, timeval & now, uint8_t ttl);
+
+
+    /*
+     * ICMP functions
+     */
+    static void complete_icmp_header(uint8_t *transport_buffer, uint16_t target_checksum, timeval &start, timeval &now);
 };
 
 

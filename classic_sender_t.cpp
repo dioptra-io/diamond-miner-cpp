@@ -230,6 +230,13 @@ void classic_sender_t::send(int n_packets, uint32_t destination, uint8_t ttl, ui
                 static_cast<uint16_t>(m_payload.size()));
 
         buf_size = sizeof(compact_ip_hdr) + sizeof(tcphdr) + m_payload.size();
+    }  else if (m_proto == IPPROTO_ICMP){
+        uint16_t payload_length = ttl + 2;
+        uint16_t transport_length = sizeof(icmphdr) + payload_length;
+
+        packets_utils::complete_icmp_header(m_buffer  + sizeof(ip), sport, m_start, m_now);
+        buf_size = sizeof(compact_ip_hdr) + transport_length;
+
     }
 
 //    Tins::EthernetII test (m_buffer, sizeof(ether_header) + sizeof(ip) + sizeof(udphdr) + m_payload.size());

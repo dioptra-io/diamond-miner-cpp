@@ -79,6 +79,8 @@ m_n_packets_sent{0}
         transport_header_size = sizeof(udphdr);
     } else if (proto == IPPROTO_TCP){
         transport_header_size = sizeof(tcphdr);
+    } else if (proto == IPPROTO_ICMP){
+        transport_header_size = sizeof(icmphdr);
     }
     // Buffer size is size of the IP header + size of transport + size of maximum payload
     // We will only send the number of needed bytes for payload.
@@ -212,6 +214,15 @@ void pf_ring_sender_t::send(int n_packets, uint32_t destination, uint8_t ttl, ui
                                               static_cast<uint16_t>(m_payload.size()));
 
         buf_size = sizeof(ether_header) + sizeof(compact_ip_hdr) + sizeof(tcphdr) + m_payload.size();
+    }
+
+    else if (m_proto == IPPROTO_ICMP){
+        uint16_t payload_length = ttl + 2;
+        uint16_t transport_length = sizeof(icmphdr) + payload_length;
+
+        packets_utils::complete_icmp_header(m_buffer + sizeof(ether_header) + sizeof(ip), sport, m_start, m_now);
+        buf_size = sizeof (ether_header) + sizeof(compact_ip_hdr) + transport_length;
+
     }
 
 

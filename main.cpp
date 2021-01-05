@@ -78,6 +78,9 @@ int main(int argc, char **argv) {
         else if (proto == "tcp") {
             options.proto = IPPROTO_TCP;
         }
+        else if (proto == "icmp") {
+            options.proto = IPPROTO_ICMP;
+        }
     } else {
         std::cerr << "Unknown protocol. Exiting...\n";
         exit(1);

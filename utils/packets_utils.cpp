@@ -95,28 +95,34 @@ void packets_utils::complete_ip_header(uint8_t *ip_buffer, uint32_t destination,
 //    adjust_payload_len(ip_buffer, lsb_16_destination, proto);
 
     // Compute the payload length so that it has the good checksum.
-        if (proto == IPPROTO_UDP) {
+    if (proto == IPPROTO_UDP) {
 #ifdef __APPLE__
 
         ip_header->ip_len = sizeof(ip) + sizeof(udphdr) + payload_len;
 #else
         ip_header->ip_len = htons(sizeof(ip) + sizeof(udphdr) + payload_len);
 #endif
-        }
-        else if (proto == IPPROTO_TCP) {
+    } else if (proto == IPPROTO_TCP) {
 #ifdef __APPLE__
 
         ip_header->ip_len = sizeof(ip) + sizeof(tcphdr) + payload_len;
 #else
         ip_header->ip_len = htons(sizeof(ip) + sizeof(tcphdr) + payload_len);
 #endif
+    } else if (proto == IPPROTO_ICMP) {
+#ifdef __APPLE__
+
+        ip_header->ip_len = sizeof(ip) + sizeof(icmphdr) + payload_len;
+#else
+        ip_header->ip_len = htons(sizeof(ip) + sizeof(icmphdr) + payload_len);
+#endif
+
+        // Reset the checksum before computation
+        ip_header->ip_sum = 0;
+
+        // Value of the checksum in big endian
+        ip_header->ip_sum = wrapsum(in_cksum((unsigned char *) ip_header, sizeof(*ip_header), 0));
     }
-
-    // Reset the checksum before computation
-    ip_header->ip_sum = 0;
-
-    // Value of the checksum in big endian
-    ip_header->ip_sum = wrapsum(in_cksum((unsigned char *) ip_header, sizeof(*ip_header), 0));
 }
 
 void packets_utils::adjust_payload_len(uint8_t *ip_buffer, uint16_t checksum, uint8_t proto) {
@@ -316,6 +322,35 @@ void packets_utils::add_udp_timestamp(uint8_t *transport_buffer, uint8_t *ip_buf
 
 }
 
+
+void packets_utils::complete_icmp_header(uint8_t *transport_buffer, uint16_t target_checksum, timeval &start, timeval &now) {
+    icmphdr *icmp_header = reinterpret_cast<icmphdr *> (transport_buffer);
+    icmp_header->type = 8; // ICMP ECHO request
+    icmp_header->code = 0; // ICMP ECHO request
+    icmp_header->checksum = 0;
+    icmp_header->un.echo.id = htons(target_checksum); // Redundant for checksum
+    uint32_t time_diff = elapsed(&now, &start);
+    icmp_header->un.echo.sequence = htons(time_diff); // Has to encode timestamp
+    icmp_header->un.echo.sequence = 0; // Has to encode timestamp
+
+    uint32_t target_checksum_little_endian = ~ntohs(target_checksum) & 0xFFFF;
+    // Deconstruct the checksum
+    // Little endian checksum
+    uint32_t wrong_checksum = in_cksum((unsigned char *) icmp_header, sizeof(icmphdr), 0);
+
+    uint32_t payload = 0;
+    uint32_t c = target_checksum_little_endian;
+    if (c < wrong_checksum){
+        c += 0xFFFF;
+    }
+    payload = c - wrong_checksum;
+
+    // First 2 bytes of payload make the checksum vary. Other bytes are just padding.
+    uint16_t * checksum_tweak_data = reinterpret_cast<uint16_t *>(transport_buffer + sizeof(icmphdr));
+    *checksum_tweak_data = htons(payload);
+
+    icmp_header->checksum = target_checksum;
+}
 
 
 
